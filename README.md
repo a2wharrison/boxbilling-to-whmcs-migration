@@ -9,4 +9,4 @@ Also, once you start **retrieve_boxbilling.php** via browser don't stop it or re
 
 If script fails or is interrupted you will need to have CLEAN WHMCS installation again, So please, before starting this script, make backup of WHMCS database which you can re-import to try again.
 
-In order for WHMCS API connection to work, you will need to whitelist and allow IP of the server from which you are running this script.
+In order for WHMCS API connection to work, you will need to whitelist and allow IP of the server from which you are running this script in WHMCS settings.
