@@ -53,10 +53,8 @@ echo "<pre>";
 
 
 foreach($clients as $client) {
-
-// Import clients to WHMCS
-
-       $config = array(
+	// Import clients to WHMCS
+    $config = array(
             'action' => 'AddClient',
             'username' => $whmcs_username,
             'password' => md5($whmcs_password),
@@ -73,190 +71,169 @@ foreach($clients as $client) {
             'clientip' => $client["ip"],
             'noemail' => true,
             'responsetype' => 'json',
-        );
+    );
         
-        if($client['notes'] !== null) {
-            $config['notes'] = $client['notes'];
-        }
+    if($client['notes'] !== null) {
+        $config['notes'] = $client['notes'];
+    }
         
         
-        $whmcs = new Service_WHMCS();
-        $import_client_result = $whmcs->send($config, $whmcsUrl);
+    $whmcs = new Service_WHMCS();
+    $import_client_result = $whmcs->send($config, $whmcsUrl);
 
-        if ($import_client_result["result"]=='error') {
-            echo "Failed to import client <b>".$config['firstname']." ".$config['lastname']."</b>. Remote WHMCS says: <b>".$import_client_result["message"]."</b><br>";
-        }
-        
-        if ($import_client_result["result"]=='success') {
-            echo "Successfully imported client <b>".$config['firstname']." ".$config['lastname']."</b> with id <b>".$import_client_result["clientid"]."</b><br>";
-        }
+    if ($import_client_result["result"]=='error') {
+        echo "Failed to import client <b>".$config['firstname']." ".$config['lastname']."</b>. Remote WHMCS says: <b>".$import_client_result["message"]."</b><br>";
+    }
+    
+    if ($import_client_result["result"]=='success') {
+        echo "Successfully imported client <b>".$config['firstname']." ".$config['lastname']."</b> with id <b>".$import_client_result["clientid"]."</b><br>";
+    }
   
 
-echo "<div class='tab'>";    
-foreach ($invoices as $invoice) {
+	echo "<div class='tab'>";
+	foreach ($invoices as $invoice) {
+		if ($invoice['client']['id'] == $client['id']) {
 
+			$client_invoices[]=$invoice;
+		    
+		    //Import Invoices
 
-if ($invoice['client']['id'] == $client['id']) {
+			if($invoice["status"] == canceled) {
+			    $invoice_status = canceled;
+			} else if($invoice["status"] == paid) {
+			    $invoice_status = Paid;
+			} else if($invoice["status"] == canceled) { //This is not a typo
+			    $invoice_status = Cancelled;
+			} else if($invoice["status"] == unpaid) {
+			    $invoice_status = Unpaid;
+			} else if($invoice["status"] == refunded) {
+			    $invoice_status = Refunded;
+			}
 
-    $client_invoices[]=$invoice;
-    
-    
-    //Import Inovices
+			$createDate = new DateTime($invoice["created_at"]);
+			$created_at = $createDate->format('Y-m-d');
 
-if($invoice["status"] == canceled) {
-    $invoice_status = canceled;
-} else if($invoice["status"] == paid) {
-    $invoice_status = Paid;
-} else if($invoice["status"] == canceled) { //This is not a typo
-    $invoice_status = Cancelled;
-} else if($invoice["status"] == unpaid) {
-    $invoice_status = Unpaid;
-} else if($invoice["status"] == refunded) {
-    $invoice_status = Refunded;
-}
+			$dueDate = new DateTime($invoice["due_at"]);
+			$due_at = $dueDate->format('Y-m-d');
+			$cnt=1;
 
-$createDate = new DateTime($invoice["created_at"]);
-$created_at = $createDate->format('Y-m-d');
-
-$createDate = new DateTime($invoice["due_at"]);
-$due_at = $createDate->format('Y-m-d');
-$cnt=1;
-
-        $config = array(
-                'action' => 'CreateInvoice',
-                'username' => $whmcs_username,
-                'password' => md5($whmcs_password),
-                'userid' => $import_client_result["clientid"],
-                'status' => $invoice_status,
-                'sendinvoice' => '0',
-                'paymentmethod' => $payment_method,
-                'taxrate' => $invoice["taxrate"],
-                'date' => $created_at,
-                'duedate' => $due_at,
-                'autoapplycredit' => '0',
-                'responsetype' => 'json',
-            );
-            
+	        $config = array(
+	                'action' => 'CreateInvoice',
+	                'username' => $whmcs_username,
+	                'password' => md5($whmcs_password),
+	                'userid' => $import_client_result["clientid"],
+	                'status' => $invoice_status,
+	                'sendinvoice' => '0',
+	                'paymentmethod' => $payment_method,
+	                'taxrate' => $invoice["taxrate"],
+	                'date' => $created_at,
+	                'duedate' => $due_at,
+	                'autoapplycredit' => '0',
+	                'responsetype' => 'json',
+	        );
+		            
             if($invoice['notes'] !== null) {
                 $config['notes'] = $invoice['notes'];
             }
-            
- foreach($invoice["lines"] as $item) {
+		            
+			foreach($invoice["lines"] as $item) {
                 $config['itemdescription'.$cnt] = $item["title"];
                 $config['itemamount'.$cnt] = $item["price"];
                 $config['itemtaxed'.$cnt] = $item["taxed"];
                 $cnt++;
-}       
+			}
 
+		    $whmcs = new Service_WHMCS();
+		    $import_invoice_result = $whmcs->send($config, $whmcsUrl);
 
-  $whmcs = new Service_WHMCS();
-$import_invoice_result = $whmcs->send($config, $whmcsUrl);
+	        if ($import_invoice_result["result"]=='error') {
+	            echo "Failed to import invoice #<b>".$invoice['id']."</b>. Remote WHMCS says: <b>".$import_invoice_result["message"]."</b><br>";
+	        }
+	        
+	        if ($import_invoice_result["result"]=='success') {
+	            echo "Successfully imported invoice #<b>".$invoice['id']."</b>.<br>";
+	        }
+		}
+	}
 
-        if ($import_invoice_result["result"]=='error') {
-            echo "Failed to import invoice #<b>".$invoice['id']."</b>. Remote WHMCS says: <b>".$import_invoice_result["message"]."</b><br>";
-        }
-        
-        if ($import_invoice_result["result"]=='success') {
-            echo "Successfully imported invoice #<b>".$invoice['id']."</b>.<br>";
-        } 
-
-}
-}
-
-
-
-
-
-/*
-This part is discontinued and not working properly becase of the lack of WHMCS API calls and I really didn't have time to mess with MySQL connections.
-This could still import domains but you need to add all TLDs to whmcs and add prices as I wasn't able to do it because of lack of API functions. 
-*/
+// This part is discontinued and not working properly becase of the lack of WHMCS API calls and I really didn't have time to mess with MySQL connections.
+// This could still import domains but you need to add all TLDs to whmcs and add prices as I wasn't able to do it because of lack of API functions. 
+//
 
 /*
 foreach ($orders as $order) {
 
+	if ($order['client']['id'] == $client['id'] && $order['service_type'] == 'domain') {
+       
+	    //Import Domains
 
-if ($order['client']['id'] == $client['id'] && $order['service_type'] == 'domain') {
+		if($order["status"] == pending_setup) {
+		    $order_status = Active;
+		} else if($order["status"] == active) { 
+		    $order_status = Pending;
+		} else {
+		    $order_status;
+		}
 
-    $client_orders[]=$order;
-    
-    
-    //Import Domains
+		if($order["config"]["period"] == '1M') {
+		    $order_billing_cycle = 'monthly';
+		} else if($order["config"]["period"] == '3M') {
+		    $order_billing_cycle = 'quarterly';
+		} else if($order["config"]["period"] == '6M') {
+		    $order_billing_cycle = 'semi-annually';
+		} else if($order["config"]["period"] == '1Y') {
+		    $order_billing_cycle = 'annually';
+		} else if($order["config"]["period"] == '2Y') {
+		    $order_billing_cycle = 'biennially';
+		} else if($order["config"]["period"] == '3Y') {
+		    $order_billing_cycle = 'triennially';
+		}
 
-if($order["status"] == pending_setup) {
-    $order_status = Active;
-} else if($order["status"] == active) { 
-    $order_status = Pending;
-} else {
-    $order_status;
+		if($order["config"]["period"] == '1W') {
+		    echo "WHMCS doesnt support 1 week billing period therefore order ID".$order["id"]." won't be imported";
+		} else {
+			$createDate = new DateTime($order["created_at"]);
+			$created_at = $createDate->format('Y-m-d');
+
+			$dueDate = new DateTime($order["due_at"]);
+			$due_at = $dueDate->format('Y-m-d');
+
+
+	        $config = array(
+	            'action' => 'AddOrder',
+	            'username' => $whmcs_username,
+	            'password' => md5($whmcs_password),
+	            'clientid' => $import_client_result["clientid"],
+	            'domain' => $order["config"]["register_sld"].$order["config"]["register_tld"],
+	            'billingcycle' => $order_billing_cycle,
+	            'domaintype' => register,
+	            'regperiod' => $order["config"]["register_years"],
+	            'dnsmanagement' => true,
+	            'nameserver1' => $order["config"]["ns1"],
+	            'nameserver2' => $order["config"]["ns2"],
+	            'paymentmethod' => $payment_method,
+	            'orderstatus' => $order_status,
+	            'responsetype' => 'json',
+	        );
+		          
+	        $whmcs = new Service_WHMCS();
+			$import_order_result = $whmcs->send($config, $whmcsUrl);
+
+	        if ($import_order_result["result"]=='error') {
+	            echo "Failed to import order #<b>".$order['id']."</b>. Remote WHMCS says: <b>".$import_order_result["message"]."</b><br>";
+	            
+	        }
+		        
+	        if ($import_order_result["result"]=='success') {
+	            echo "Successfully imported order #<b>".$order['id']."</b>.<br>";
+	            die();
+	        }
+		}
+	}
 }
 
-if($order["config"]["period"] == '1M') {
-    $order_billing_cycle = 'monthly';
-} else if($order["config"]["period"] == '3M') {
-    $order_billing_cycle = 'quarterly';
-} else if($order["config"]["period"] == '6M') {
-    $order_billing_cycle = 'semi-annually';
-} else if($order["config"]["period"] == '1Y') {
-    $order_billing_cycle = 'annually';
-} else if($order["config"]["period"] == '2Y') {
-    $order_billing_cycle = 'biennially';
-} else if($order["config"]["period"] == '3Y') {
-    $order_billing_cycle = 'triennially';
-}
-
-if($order["config"]["period"] == '1W') {
-    echo "WHMCS doesnt support 1 week billing period therefore order ID".$order["id"]." won't be imported";
-} else {
-$createDate = new DateTime($order["created_at"]);
-$created_at = $createDate->format('Y-m-d');
-
-$createDate = new DateTime($order["due_at"]);
-$due_at = $createDate->format('Y-m-d');
-
-
-        $config = array(
-            'action' => 'AddOrder',
-            'username' => $whmcs_username,
-            'password' => md5($whmcs_password),
-            'clientid' => $import_client_result["clientid"],
-            'domain' => $order["config"]["register_sld"].$order["config"]["register_tld"],
-            'billingcycle' => $order_billing_cycle,
-            'domaintype' => register,
-            'regperiod' => $order["config"]["register_years"],
-            'dnsmanagement' => true,
-            'nameserver1' => $order["config"]["ns1"],
-            'nameserver2' => $order["config"]["ns2"],
-            'paymentmethod' => $payment_method,
-            'orderstatus' => $order_status,
-            'responsetype' => 'json',
-        );
-           // print_r($config);die();
-  $whmcs = new Service_WHMCS();
-$import_order_result = $whmcs->send($config, $whmcsUrl);
-
-        if ($import_order_result["result"]=='error') {
-            echo "Failed to import order #<b>".$order['id']."</b>. Remote WHMCS says: <b>".$import_order_result["message"]."</b><br>";
-            
-        }
-        
-        if ($import_order_result["result"]=='success') {
-            echo "Successfully imported order #<b>".$order['id']."</b>.<br>";
-            die();
-        }
-
-}       
-}
-
-
-
-
-}
 */
 
-echo "</div>";
-
-            echo "<br><br>";
-
+echo "</div><br><br>";
 
 }
