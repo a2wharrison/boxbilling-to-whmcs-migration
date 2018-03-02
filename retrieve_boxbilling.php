@@ -226,7 +226,6 @@ foreach ($orders as $order) {
                 
             if ($import_order_result["result"]=='success') {
                 echo "Successfully imported order #<b>".$order['id']."</b>.<br>";
-                die();
             }
         }
     }
