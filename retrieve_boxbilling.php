@@ -1,9 +1,11 @@
-<style type="text/css">
-<!--
-.tab { margin-left: 40px; }
--->
-</style>
 <?php
+
+echo '<style type="text/css">';
+echo '<!--';
+echo '.tab { margin-left: 40px; }';
+echo '-->';
+echo '</style>';
+
 $boxbilling_token = ''; //You can generate API token in BB-ADMIN in BoxBilling
 $boxbilling_url = 'https://www.boxbiliing.com/api'; //Replace https://www.boxbiliing.com with your domain
 
