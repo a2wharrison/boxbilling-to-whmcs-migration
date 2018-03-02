@@ -1,5 +1,5 @@
 # boxbilling-to-whmcs-migration
-This script will migrate all clients and invoices from BoxBilling to WHMCS
+This script will migrate all clients and invoices from BoxBilling to WHMCS using both software APIs.
 
 Put project files in one folder, edit retrieve_boxbilling.php with required information. 
 And then run retrieve_boxbilling.php file.
